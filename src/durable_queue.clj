@@ -437,6 +437,8 @@
     "Returns a map of queue names onto information about the immediate state of the queue.")
   (fsync [_]
     "Forces an fsync on all modified files.")
+  (serialize
+    [_ q-name])
   (take!
     [_ q-name]
     [_ q-name timeout timeout-val]
@@ -600,7 +602,7 @@
                      (loop [tasks tasks]
                        (when-let [task (first tasks)]
                          (status! task :incomplete)
-                         ; Continue loading until data doesn't fit into the queue. 
+                         ; Continue loading until data doesn't fit into the queue.
                          ; Drop data in slabs that overflows queue size.
                          (when (.offer q' task)
                            (recur (rest tasks)))))
@@ -660,6 +662,11 @@
                                             count)}
                        (immediate-stats (queue q-name) (get @queue-name->stats q-name))))
                    ks))))
+
+           (serialize [this q-name]
+             (let [q-name (munge (name q-name))
+                   ^LinkedBlockingQueue q (queue q-name)]
+               (seq (.toArray q))))
 
            (take! [this q-name timeout timeout-val]
              (let [q-name (munge (name q-name))
